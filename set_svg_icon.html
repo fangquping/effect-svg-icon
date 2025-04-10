@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html> 
+<head>
+</head>
+<body>
+    <input type="file" id="inputSVG" accept=".svg" >
+    <div id="outputSVG"></div>
+    <button id="applyEffects" style="display:none;">应用效果</button>
+    <button id="resetEffects" style="display:none;">复位</button>
+    <button id="saveSVG" style="display:none;">保存图片</button>
+</body>
+<script src="changeSVG.js"></script>
+<script>
+    let originalSVG = null; // 保存原始 SVG 的副本
+
+    document.getElementById('inputSVG').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        const outputSVG = document.getElementById('outputSVG');
+        // 删除 outputSVG 中的子元素
+        while (outputSVG.firstChild) {
+            outputSVG.removeChild(outputSVG.firstChild);
+        }
+        if (file) {
+            loadSVG(file, function(svgElement) {
+                svgElement.setAttribute('id', 'loadedSVG'); // 为加载的 SVG 设置 ID
+                outputSVG.appendChild(svgElement);
+                originalSVG = svgElement.cloneNode(true); // 保存原始 SVG 的副本
+                document.getElementById('applyEffects').style.display = 'block'; // 显示应用效果按钮
+                document.getElementById('resetEffects').style.display = 'block'; // 显示复位按钮
+                document.getElementById('saveSVG').style.display = 'block'; // 显示保存图片按钮
+            });
+        }
+    });
+
+    document.getElementById('applyEffects').addEventListener('click', function() {
+        resetSVG(); // 重置 SVG
+        const svgElement = document.querySelector('#outputSVG svg');
+        if (svgElement) {
+            const elements = Array.from(svgElement.querySelectorAll('path, circle, rect, polygon, ellipse')) // 获取所有图形元素
+                .filter(element => !element.closest('mask')); // 排除 mask 标签下的元素
+            let count = 0; // 计数器
+            elements.forEach(element => {
+                if (count < 3) addHighlight(element); // 只对前 3 个元素应用高光
+                count++;
+            });
+            // 应用渐变到所有元素
+            applyElementGradient(elements);
+        } else {
+            console.error('No SVG element found in the output.');
+        }
+    });
+
+    // 修复 resetEffects 按钮的事件监听器
+    document.getElementById('resetEffects').addEventListener('click', resetSVG);
+
+    // 将 resetSVG 改为函数声明
+    function resetSVG() {
+        const outputSVG = document.getElementById('outputSVG');
+        if (originalSVG) {
+            // 删除当前 SVG
+            while (outputSVG.firstChild) {
+                outputSVG.removeChild(outputSVG.firstChild);
+            }
+            // 恢复原始 SVG
+            outputSVG.appendChild(originalSVG.cloneNode(true));
+        } else {
+            console.error('No original SVG to reset.');
+        }
+    }
+
+    document.getElementById('saveSVG').addEventListener('click', function() {
+        const svgElement = document.querySelector('#outputSVG svg');
+        if (svgElement) saveSVG(svgElement); // 调用 changeSVG.js 中的 saveSVG 函数
+        else console.error('No SVG element found to save.');
+    });
+</script>
+</html>
+
